@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f8f8">
+<title>Нотка — ноты, интервалы, аккорды</title>
+<style>
+:root{--bg:#f6f8f8;--fg:#16202a;--mute:#76828c;--line:#dde4e6;--card:#fff;--acc:#0f766e;--ok:#2e9e5b;--bad:#c2410c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11171c;--fg:#e8eef0;--mute:#8b98a1;--line:#26323a;--card:#1a232a;--acc:#3cc4b4;--ok:#3fb36f;--bad:#e2662f}}
+:root[data-theme="dark"]{--bg:#11171c;--fg:#e8eef0;--mute:#8b98a1;--line:#26323a;--card:#1a232a;--acc:#3cc4b4;--ok:#3fb36f;--bad:#e2662f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.4 Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+button{font-family:inherit;cursor:pointer}
+main{flex:1;overflow-y:auto;width:100%;max-width:520px;margin:0 auto;padding:20px 20px 12px}
+nav{display:flex;border-top:1px solid var(--line);background:var(--bg)}
+nav button{flex:1;padding:16px 4px;border:0;background:none;color:var(--mute);font-size:15px}
+nav button.on{color:var(--acc);font-weight:700}
+.seg{display:flex;background:var(--line);border-radius:12px;padding:3px;margin-bottom:24px}
+.seg button{flex:1;border:0;background:none;color:var(--mute);padding:10px;border-radius:10px;font-size:15px}
+.seg button.on{background:var(--card);color:var(--fg);font-weight:700}
+.seg.sm{margin-bottom:16px}
+.seg.sm button{padding:8px;font-size:14px}
+.big{text-align:center;font-size:44px;font-weight:700;min-height:56px;margin-bottom:4px}
+.hint{text-align:center;color:var(--mute);font-size:14px;margin:0 0 16px}
+.staff{display:block;width:100%;max-width:340px;margin:0 auto 24px;color:var(--fg)}
+.staff line{stroke:currentColor;stroke-width:1}
+.staff .clef{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.staff ellipse,.staff circle{fill:currentColor}
+.kb{display:flex;gap:3px}
+.k{flex:1;height:130px;border:1px solid var(--line);border-radius:0 0 8px 8px;background:var(--card);color:var(--fg);display:flex;align-items:flex-end;justify-content:center;padding:0 0 8px;font-size:10px}
+.k.on{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(4,1fr)}
+.grid.two{grid-template-columns:1fr 1fr}
+.grid.one{grid-template-columns:1fr}
+.opt{padding:16px 8px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);font-size:16px}
+.opt.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.row{display:flex;align-items:center;width:100%;text-align:left;padding:14px 4px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--fg);gap:12px;font-size:16px}
+.row div{flex:1}
+.row b{display:block;font-weight:600}
+.row small{color:var(--mute);font-size:13px}
+.row i{font-style:normal;color:var(--acc)}
+.row.on b{color:var(--acc)}
+.score{text-align:center;color:var(--mute);font-size:14px;margin-bottom:8px}
+.play{display:block;margin:8px auto 24px;border:1px solid var(--acc);color:var(--acc);background:none;border-radius:999px;padding:14px 28px;font-size:16px}
+</style>
+</head>
+<body>
+<main id="v"></main>
+<nav>
+<button data-t="n">Ноты</button>
+<button data-t="i">Интервалы</button>
+<button data-t="c">Аккорды</button>
+</nav>
+<script>
+const v=document.getElementById('v');
+const NAMES=['До','Ре','Ми','Фа','Соль','Ля','Си'],SEMI=[0,2,4,5,7,9,11];
+const IN=[['Малая секунда',1],['Большая секунда',2],['Малая терция',3],['Большая терция',4],['Чистая кварта',5],['Тритон',6],['Чистая квинта',7],['Малая секста',8],['Большая секста',9],['Малая септима',10],['Большая септима',11],['Чистая октава',12]];
+const CH=[['Мажорное трезвучие',[0,4,7],'До – Ми – Соль','б.3 + м.3'],['Минорное трезвучие',[0,3,7],'До – Ми♭ – Соль','м.3 + б.3'],['Уменьшённое трезвучие',[0,3,6],'До – Ми♭ – Соль♭','м.3 + м.3'],['Увеличенное трезвучие',[0,4,8],'До – Ми – Соль♯','б.3 + б.3'],['Доминантсептаккорд',[0,4,7,10],'До – Ми – Соль – Си♭','б.3 + м.3 + м.3']];
+const HINT={n:'Какая это нота?',i:'Какой это интервал?',c:'Какой это аккорд?'};
+let tab='n',mode={n:'l',i:'l',c:'l'},sc={n:[0,0],i:[0,0],c:[0,0]},sel=null,q=null,locked=false,rid=0,last=-99,clef='t',ac;
+const nm=k=>NAMES[((k%7)+7)%7];
+const midi=k=>60+12*Math.floor(k/7)+SEMI[((k%7)+7)%7];
+const RNG={t:[0,11],b:[-11,0]};
+const hz=m=>440*Math.pow(2,(m-69)/12);
+const pt=n=>n===1?'полутон':n<5?'полутона':'полутонов';
+
+function tone(m,t0,d,g){
+  ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+  if(ac.state==='suspended')ac.resume();
+  const t=ac.currentTime+t0,o=ac.createOscillator(),a=ac.createGain();
+  o.type='triangle';o.frequency.value=hz(m);
+  a.gain.setValueAtTime(0.0001,t);a.gain.linearRampToValueAtTime(g,t+.02);a.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(a);a.connect(ac.destination);o.start(t);o.stop(t+d+.05);
+}
+function play(ms){
+  const g=.3/Math.sqrt(ms.length);
+  ms.forEach((m,i)=>tone(m,i*.5,1,g));
+  const t=ms.length*.5+.2;
+  ms.forEach(m=>tone(m,t,1.6,g));
+}
+
+function staff(k){
+  let s='<svg class="staff" viewBox="0 0 220 110" role="img" aria-label="Нотный стан">';
+  for(let i=0;i<5;i++)s+=`<line x1="10" x2="210" y1="${30+i*10}" y2="${30+i*10}"/>`;
+  s+=clef==='t'?'<path class="clef" d="M27 78C27 85 37 84 36 76L33 28C32 18 40 10 44 18C47 26 38 40 30 50C20 60 24 72 36 70C46 68 46 56 36 54C28 53 26 62 33 63"/>':'<path class="clef" d="M28 40C42 36 50 46 44 58C40 66 32 70 22 72"/><circle cx="28" cy="40" r="4"/><circle cx="55" cy="35" r="2"/><circle cx="55" cy="45" r="2"/>';
+  if(k!==null){
+    const p=clef==='t'?k-2:k+10,y=70-p*5;
+    if(p===-2||p===10)s+=`<line x1="118" x2="152" y1="${y}" y2="${y}"/>`;
+    s+=`<ellipse cx="135" cy="${y}" rx="7.5" ry="5" transform="rotate(-18 135 ${y})"/>`;
+    s+=p<=4?`<line x1="141.5" x2="141.5" y1="${y}" y2="${y-30}"/>`:`<line x1="128.5" x2="128.5" y1="${y}" y2="${y+30}"/>`;
+  }
+  return s+'</svg>';
+}
+
+function clefSeg(){return `<div class="seg sm"><button data-f="t" class="${clef==='t'?'on':''}">Скрипичный ключ</button><button data-f="b" class="${clef==='b'?'on':''}">Басовый ключ</button></div>`}
+function learnHTML(){
+  if(tab==='n'){
+    let k='';
+    for(let j=RNG[clef][0];j<=RNG[clef][1];j++)k+=`<button class="k${j===sel?' on':''}" data-k="${j}">${nm(j)}</button>`;
+    return clefSeg()+`<div class="big">${sel===null?'':nm(sel)}</div>`+staff(sel)+`<p class="hint">Нажимай на клавиши</p><div class="kb">${k}</div>`;
+  }
+  const L=tab==='i'?IN:CH;
+  return L.map((x,i)=>`<button class="row${i===sel?' on':''}" data-i="${i}"><div><b>${x[0]}</b><small>${tab==='i'?x[1]+' '+pt(x[1]):x[2]+' · '+x[3]}</small></div><i>▶</i></button>`).join('');
+}
+
+function newQ(){
+  locked=false;
+  if(tab==='n'){
+    const [a,b]=RNG[clef];let p;do p=a+Math.floor(Math.random()*(b-a+1));while(p===last);
+    last=p;q={p,c:((p%7)+7)%7};
+    return;
+  }
+  const r=55+Math.floor(Math.random()*10);
+  if(tab==='i'){
+    const c=Math.floor(Math.random()*IN.length),o=new Set([c]);
+    while(o.size<4)o.add(Math.floor(Math.random()*IN.length));
+    q={c,o:[...o].sort((a,b)=>a-b),ms:[r,r+IN[c][1]]};
+  }else{
+    const c=Math.floor(Math.random()*CH.length);
+    q={c,o:CH.map((_,i)=>i),ms:CH[c][1].map(x=>r+x)};
+  }
+}
+
+function quizHTML(){
+  const [ok,n]=sc[tab];
+  const st=i=>q.pick===undefined?'':i===q.c?' ok':i===q.pick?' bad':'';
+  let h=`<div class="score">Верно: ${ok} из ${n}</div><p class="hint">${HINT[tab]}</p>`;
+  if(tab==='n'){
+    h=clefSeg()+h+staff(q.p)+'<div class="grid">'+NAMES.map((x,i)=>`<button class="opt${st(i)}" data-a="${i}">${x}</button>`).join('')+'</div>';
+  }else{
+    const L=tab==='i'?IN:CH;
+    h+=`<button class="play" data-r="1">▶ Послушать ещё раз</button><div class="grid ${tab==='i'?'two':'one'}">`+q.o.map(i=>`<button class="opt${st(i)}" data-a="${i}">${L[i][0]}</button>`).join('')+'</div>';
+  }
+  return h;
+}
+
+function answer(a){
+  if(locked)return;
+  locked=true;q.pick=a;sc[tab][1]++;
+  if(a===q.c)sc[tab][0]++;
+  if(tab==='n')tone(midi(q.p),0,1.2,.3);
+  render();
+  const id=rid;
+  setTimeout(()=>{if(id===rid){q=null;render()}},1400);
+}
+
+function render(){
+  rid++;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  const m=mode[tab];let fresh=false;
+  if(m==='q'&&!q){newQ();fresh=true}
+  v.innerHTML=`<div class="seg"><button data-m="l" class="${m==='l'?'on':''}">Учить</button><button data-m="q" class="${m==='q'?'on':''}">Проверка</button></div>`+(m==='q'?quizHTML():learnHTML());
+  if(fresh&&tab!=='n'){const id=rid;setTimeout(()=>{if(id===rid&&q)play(q.ms)},250)}
+}
+
+v.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const d=b.dataset;
+  if(d.m){mode[tab]=d.m;q=null;sel=null;render()}
+  else if(d.f){clef=d.f;q=null;sel=null;render()}
+  else if(d.k!==undefined){sel=+d.k;tone(midi(sel),0,1.2,.3);render()}
+  else if(d.i!==undefined){
+    sel=+d.i;
+    play(tab==='i'?[60,60+IN[sel][1]]:CH[sel][1].map(x=>60+x));
+    render();
+  }
+  else if(d.a!==undefined)answer(+d.a);
+  else if(d.r&&q)play(q.ms);
+});
+document.querySelector('nav').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  tab=b.dataset.t;q=null;sel=null;render();
+});
+render();
+</script>
+</body>
+</html>
